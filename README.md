@@ -2,7 +2,7 @@
 
 Prototype mini game berbasis deteksi tangan menggunakan Python, OpenCV, dan NumPy untuk mata kuliah Pengolahan Citra Visual / Computer Vision.
 
-Project ini masih berada pada tahap awal, yaitu membangun pipeline computer vision untuk membaca kamera, mendeteksi area tangan/marker dengan HSV, membersihkan mask, dan mengambil titik tengah objek sebagai dasar kontrol game.
+Project ini masih berada pada tahap awal, yaitu membangun pipeline computer vision untuk membaca kamera, mendeteksi marker biru dengan HSV, membersihkan mask, dan mengambil titik tengah objek sebagai dasar kontrol game.
 
 ## Current Progress
 
@@ -10,6 +10,7 @@ Project ini masih berada pada tahap awal, yaitu membangun pipeline computer visi
 - Tampilan frame real-time menggunakan `cv2.imshow`.
 - Konversi frame dari BGR ke HSV.
 - HSV masking menggunakan operasi array NumPy.
+- Default tracking mode menggunakan marker biru agar lebih stabil dari deteksi warna kulit.
 - Operasi morfologi manual untuk membersihkan mask.
 - Deteksi centroid sebagai posisi awal kontrol handweapon.
 - Gesture detection sederhana berdasarkan kecepatan perpindahan centroid.
@@ -54,6 +55,16 @@ python main.py
 ```
 
 Tekan `q` untuk keluar dari program.
+
+Default HSV untuk marker biru:
+
+```python
+H_MIN, H_MAX = 90, 130
+S_MIN, S_MAX = 70, 255
+V_MIN, V_MAX = 50, 255
+```
+
+Gunakan objek biru terang, misalnya layar HP dengan background biru, kertas biru, atau sarung tangan biru.
 
 ## Next Development Plan
 

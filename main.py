@@ -73,6 +73,12 @@ def dummy_callback(value):
     pass
 
 def main():
+    # Default HSV untuk marker biru terang.
+    # Bisa disesuaikan lewat trackbar jika pencahayaan berbeda.
+    default_h_min, default_h_max = 90, 130
+    default_s_min, default_s_max = 70, 255
+    default_v_min, default_v_max = 50, 255
+
     # Inisiasi kalibrasi UI
     cv2.namedWindow("HSV Calibration", cv2.WINDOW_NORMAL)
     cv2.resizeWindow("HSV Calibration", 400, 350)
@@ -81,13 +87,13 @@ def main():
     # Gunakan gambar latar kosong yang cukup tinggi agar area trackbar punya ruang untuk muncul
     cv2.imshow("HSV Calibration", np.zeros((100, 400, 3), np.uint8))
     
-    # Nilai standar untuk mendeteksi warna kulit
-    cv2.createTrackbar("H Min", "HSV Calibration", 0, 179, dummy_callback)
-    cv2.createTrackbar("H Max", "HSV Calibration", 20, 179, dummy_callback)
-    cv2.createTrackbar("S Min", "HSV Calibration", 30, 255, dummy_callback)
-    cv2.createTrackbar("S Max", "HSV Calibration", 255, 255, dummy_callback)
-    cv2.createTrackbar("V Min", "HSV Calibration", 60, 255, dummy_callback)
-    cv2.createTrackbar("V Max", "HSV Calibration", 255, 255, dummy_callback)
+    # Nilai standar untuk mendeteksi marker biru
+    cv2.createTrackbar("H Min", "HSV Calibration", default_h_min, 179, dummy_callback)
+    cv2.createTrackbar("H Max", "HSV Calibration", default_h_max, 179, dummy_callback)
+    cv2.createTrackbar("S Min", "HSV Calibration", default_s_min, 255, dummy_callback)
+    cv2.createTrackbar("S Max", "HSV Calibration", default_s_max, 255, dummy_callback)
+    cv2.createTrackbar("V Min", "HSV Calibration", default_v_min, 255, dummy_callback)
+    cv2.createTrackbar("V Max", "HSV Calibration", default_v_max, 255, dummy_callback)
 
     # Inisialisasi Kamera
     cap = cv2.VideoCapture(0)
@@ -100,7 +106,7 @@ def main():
         cooldown_frames=20
     )
 
-    print("Mulai kamera. Tekan 'q' untuk keluar.")
+    print("Mulai kamera. Arahkan marker biru ke kamera. Tekan 'q' untuk keluar.")
     
     while cap.isOpened():
         ret, frame = cap.read()
@@ -144,9 +150,9 @@ def main():
         h = int(mask_mentah.shape[0] * scale)
         mask_small = cv2.resize(mask_mentah, (w, h), interpolation=cv2.INTER_NEAREST)
         
-        # Melakukan Opening (membuang titik tak berguna di luar tangan)
+        # Melakukan Opening (membuang titik noise kecil di luar marker)
         mask_opened = manual_opening(mask_small, kernel_size=5)
-        # Melakukan Closing (menambal lubang di bagian dalam tangan) 
+        # Melakukan Closing (menambal lubang kecil di bagian dalam marker)
         mask_cleaned_small = manual_closing(mask_opened, kernel_size=5)
         
         # Kembalikan ukurannya ke normal untuk visualisasi
@@ -162,8 +168,8 @@ def main():
             # Menambahkan lingkaran pointer + teks titik koordinat
             cv2.circle(frame, (cx, cy), 15, (0, 255, 0), -1)
             cv2.circle(frame, (cx, cy), 15, (255, 255, 255), 2)
-            cv2.putText(frame, f"Tracking: ({cx},{cy})", (cx + 25, cy - 15), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+            cv2.putText(frame, f"Blue Marker: ({cx},{cy})", (cx + 25, cy - 15), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 180, 0), 2)
 
         velocity = gesture_detector.get_velocity()
         if gesture_detector.is_active():
@@ -175,9 +181,9 @@ def main():
         
         # 5. Result Display
         # Menampilkan gambar masing-masing ke dalam jendela layar
-        cv2.imshow("1. Input Frame Asli & Tracking", frame)
-        cv2.imshow("2. Mask Numpy Mentah", mask_mentah)
-        cv2.imshow("3. Mask Setelah Morfologi numpy", mask_cleaned)
+        cv2.imshow("1. Input Frame & Blue Marker Tracking", frame)
+        cv2.imshow("2. Blue Mask Numpy Mentah", mask_mentah)
+        cv2.imshow("3. Blue Mask Setelah Morfologi", mask_cleaned)
         
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
