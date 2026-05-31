@@ -10,6 +10,7 @@ ANVIL_Y = 360
 INGOT_W = 150
 INGOT_H = 42
 HIT_FLASH_FRAMES = 10
+SCORE_PER_HIT = 10
 
 def manual_erosion(binary_img, kernel_size=5):
     """
@@ -195,6 +196,18 @@ def is_strike_on_ingot(centroid, ingot_box, gesture_detector):
     return (x1 - margin <= cx <= x2 + margin and
             y1 - margin <= cy <= y2 + margin)
 
+def draw_hud(frame, score, hit_count):
+    """Menampilkan skor sederhana untuk tahap scoring system."""
+    overlay = frame.copy()
+    cv2.rectangle(overlay, (0, 0), (FRAME_W, 64), (20, 20, 20), -1)
+    frame[:] = (overlay.astype(np.float32) * 0.55 +
+                frame.astype(np.float32) * 0.45).astype(np.uint8)
+
+    cv2.putText(frame, f"SCORE: {score}", (18, 42),
+                cv2.FONT_HERSHEY_DUPLEX, 0.8, (0, 230, 255), 2)
+    cv2.putText(frame, f"HITS: {hit_count}", (210, 42),
+                cv2.FONT_HERSHEY_DUPLEX, 0.8, (120, 220, 255), 2)
+
 def dummy_callback(value):
     # Pass untuk trackbar
     pass
@@ -234,6 +247,8 @@ def main():
     )
     hammer_sprite = create_hammer_sprite()
     hit_flash = 0
+    score = 0
+    hit_count = 0
 
     print("Mulai kamera. Arahkan marker biru ke kamera. Tekan 'q' untuk keluar.")
     
@@ -295,6 +310,8 @@ def main():
         ingot_box = draw_ingot(frame, hit_flash)
         if is_strike_on_ingot(centroid, ingot_box, gesture_detector):
             hit_flash = HIT_FLASH_FRAMES
+            score += SCORE_PER_HIT
+            hit_count += 1
         elif hit_flash > 0:
             hit_flash -= 1
         
@@ -313,11 +330,13 @@ def main():
         velocity = gesture_detector.get_velocity()
         down_velocity = gesture_detector.get_down_velocity()
         if gesture_detector.is_strike():
-            cv2.putText(frame, "GESTURE: STRIKE", (20, 40),
+            cv2.putText(frame, "GESTURE: STRIKE", (20, 92),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
         else:
-            cv2.putText(frame, f"Velocity: {velocity:.1f} | Down: {down_velocity:.1f}", (20, 40),
+            cv2.putText(frame, f"Velocity: {velocity:.1f} | Down: {down_velocity:.1f}", (20, 92),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 255), 2)
+
+        draw_hud(frame, score, hit_count)
         
         # 5. Result Display
         # Menampilkan gambar masing-masing ke dalam jendela layar

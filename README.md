@@ -17,6 +17,7 @@ Project ini masih berada pada tahap awal, yaitu membangun pipeline computer visi
 - Weapon sprite overlay sederhana berupa hammer yang mengikuti centroid marker.
 - Alpha blending manual menggunakan operasi NumPy untuk menempel sprite transparan.
 - Second object berupa hot ingot di atas anvil sebagai target pukulan.
+- Scoring system sederhana: skor dan jumlah hit bertambah saat `STRIKE` mengenai ingot.
 
 ## Project Requirements
 
@@ -73,6 +74,6 @@ Gerakkan marker dengan cepat ke bawah untuk memicu gesture `STRIKE`.
 
 ## Next Development Plan
 
-- Menambahkan score, lives, dan game state.
+- Menambahkan lives dan game state.
 - Mengembangkan konsep game final: Forge Strike.
 
