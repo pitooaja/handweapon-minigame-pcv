@@ -3,6 +3,14 @@ import numpy as np
 
 from gesture import GestureDetector
 
+FRAME_W = 640
+FRAME_H = 480
+ANVIL_X = FRAME_W // 2
+ANVIL_Y = 360
+INGOT_W = 150
+INGOT_H = 42
+HIT_FLASH_FRAMES = 10
+
 def manual_erosion(binary_img, kernel_size=5):
     """
     Operasi Erosi murni NumPy (tanpa cv2.erode).
@@ -139,6 +147,54 @@ def overlay_sprite(frame, sprite_bgra, cx, cy, scale=1.0):
     blended = foreground * alpha + roi * (1.0 - alpha)
     frame[fy1:fy2, fx1:fx2] = blended.astype(np.uint8)
 
+def draw_anvil(frame):
+    """Menggambar anvil sebagai area target utama Forge Strike."""
+    base_y = ANVIL_Y + 28
+    cv2.ellipse(frame, (ANVIL_X, base_y), (160, 22), 0, 0, 360, (35, 35, 40), -1)
+    cv2.rectangle(frame, (ANVIL_X - 120, ANVIL_Y), (ANVIL_X + 120, ANVIL_Y + 38),
+                  (70, 75, 85), -1)
+    cv2.rectangle(frame, (ANVIL_X - 82, ANVIL_Y + 38), (ANVIL_X + 82, ANVIL_Y + 85),
+                  (50, 55, 65), -1)
+    cv2.rectangle(frame, (ANVIL_X - 150, ANVIL_Y + 85), (ANVIL_X + 150, ANVIL_Y + 105),
+                  (42, 44, 50), -1)
+    cv2.line(frame, (ANVIL_X - 112, ANVIL_Y + 8), (ANVIL_X + 112, ANVIL_Y + 8),
+             (150, 155, 165), 2)
+    cv2.putText(frame, "ANVIL", (ANVIL_X - 29, ANVIL_Y + 64),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.48, (190, 190, 195), 1)
+
+def draw_ingot(frame, hit_flash=0):
+    """Menggambar hot ingot sebagai second object yang akan dipukul."""
+    x1 = ANVIL_X - INGOT_W // 2
+    y1 = ANVIL_Y - 54
+    x2 = ANVIL_X + INGOT_W // 2
+    y2 = y1 + INGOT_H
+
+    glow_color = (0, 180, 255) if hit_flash == 0 else (0, 255, 255)
+    body_color = (0, 110, 230) if hit_flash == 0 else (40, 220, 255)
+
+    cv2.rectangle(frame, (x1 - 8, y1 - 8), (x2 + 8, y2 + 8), glow_color, 2)
+    cv2.rectangle(frame, (x1, y1), (x2, y2), body_color, -1)
+    cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 230, 150), 2)
+    cv2.putText(frame, "INGOT", (x1 + 44, y1 + 27),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.52, (255, 255, 255), 1)
+
+    if hit_flash > 0:
+        cv2.putText(frame, "HIT!", (ANVIL_X - 34, y1 - 18),
+                    cv2.FONT_HERSHEY_DUPLEX, 0.85, (0, 255, 255), 2)
+
+    return x1, y1, x2, y2
+
+def is_strike_on_ingot(centroid, ingot_box, gesture_detector):
+    """Cek apakah gesture STRIKE terjadi dekat second object."""
+    if centroid is None or not gesture_detector.is_strike():
+        return False
+
+    cx, cy = centroid
+    x1, y1, x2, y2 = ingot_box
+    margin = 45
+    return (x1 - margin <= cx <= x2 + margin and
+            y1 - margin <= cy <= y2 + margin)
+
 def dummy_callback(value):
     # Pass untuk trackbar
     pass
@@ -168,8 +224,8 @@ def main():
 
     # Inisialisasi Kamera
     cap = cv2.VideoCapture(0)
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, FRAME_W)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, FRAME_H)
     
     gesture_detector = GestureDetector(
         history_len=6,
@@ -177,6 +233,7 @@ def main():
         cooldown_frames=20
     )
     hammer_sprite = create_hammer_sprite()
+    hit_flash = 0
 
     print("Mulai kamera. Arahkan marker biru ke kamera. Tekan 'q' untuk keluar.")
     
@@ -233,6 +290,13 @@ def main():
         # 4. Cari Titik Tengah (Centroid) Menggunakan Numpy Array Indexing
         centroid = get_centroid(mask_cleaned)
         gesture_detector.update(centroid)
+
+        draw_anvil(frame)
+        ingot_box = draw_ingot(frame, hit_flash)
+        if is_strike_on_ingot(centroid, ingot_box, gesture_detector):
+            hit_flash = HIT_FLASH_FRAMES
+        elif hit_flash > 0:
+            hit_flash -= 1
         
         # Gambarkan tracker titik tengah ke frame RGB asli
         if centroid:
