@@ -13,7 +13,7 @@ Project ini masih berada pada tahap awal, yaitu membangun pipeline computer visi
 - Default tracking mode menggunakan marker biru agar lebih stabil dari deteksi warna kulit.
 - Operasi morfologi manual untuk membersihkan mask.
 - Deteksi centroid sebagai posisi awal kontrol handweapon.
-- Gesture detection sederhana berdasarkan kecepatan perpindahan centroid.
+- Gesture detection `STRIKE` berdasarkan gerakan marker cepat ke bawah.
 - Weapon sprite overlay sederhana berupa hammer yang mengikuti centroid marker.
 - Alpha blending manual menggunakan operasi NumPy untuk menempel sprite transparan.
 
@@ -67,6 +67,8 @@ V_MIN, V_MAX = 50, 255
 ```
 
 Gunakan objek biru terang, misalnya layar HP dengan background biru, kertas biru, atau sarung tangan biru.
+
+Gerakkan marker dengan cepat ke bawah untuk memicu gesture `STRIKE`.
 
 ## Next Development Plan
 

@@ -237,7 +237,7 @@ def main():
         # Gambarkan tracker titik tengah ke frame RGB asli
         if centroid:
             cx, cy = centroid
-            weapon_scale = 1.15 if gesture_detector.is_active() else 1.0
+            weapon_scale = 1.15 if gesture_detector.is_strike() else 1.0
             overlay_sprite(frame, hammer_sprite, cx, cy, scale=weapon_scale)
 
             # Menambahkan lingkaran pointer + teks titik koordinat
@@ -247,11 +247,12 @@ def main():
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 180, 0), 2)
 
         velocity = gesture_detector.get_velocity()
-        if gesture_detector.is_active():
-            cv2.putText(frame, "GESTURE: FAST MOVE", (20, 40),
+        down_velocity = gesture_detector.get_down_velocity()
+        if gesture_detector.is_strike():
+            cv2.putText(frame, "GESTURE: STRIKE", (20, 40),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
         else:
-            cv2.putText(frame, f"Velocity: {velocity:.1f} px/frame", (20, 40),
+            cv2.putText(frame, f"Velocity: {velocity:.1f} | Down: {down_velocity:.1f}", (20, 40),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 255), 2)
         
         # 5. Result Display
