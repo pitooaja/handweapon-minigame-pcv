@@ -14,6 +14,8 @@ Project ini masih berada pada tahap awal, yaitu membangun pipeline computer visi
 - Operasi morfologi manual untuk membersihkan mask.
 - Deteksi centroid sebagai posisi awal kontrol handweapon.
 - Gesture detection sederhana berdasarkan kecepatan perpindahan centroid.
+- Weapon sprite overlay sederhana berupa hammer yang mengikuti centroid marker.
+- Alpha blending manual menggunakan operasi NumPy untuk menempel sprite transparan.
 
 ## Project Requirements
 
@@ -68,7 +70,6 @@ Gunakan objek biru terang, misalnya layar HP dengan background biru, kertas biru
 
 ## Next Development Plan
 
-- Menambahkan weapon virtual.
 - Menambahkan second object sebagai target game.
 - Menambahkan score, lives, dan game state.
 - Mengembangkan konsep game final: Forge Strike.

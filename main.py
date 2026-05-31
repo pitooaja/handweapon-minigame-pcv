@@ -68,6 +68,77 @@ def get_centroid(binary_img):
         return cx, cy
     return None
 
+def create_hammer_sprite(width=110, height=120):
+    """
+    Membuat sprite hammer sederhana dalam format BGRA.
+    Channel alpha dipakai agar sprite bisa ditempel transparan ke frame.
+    """
+    sprite = np.zeros((height, width, 4), dtype=np.uint8)
+    cx = width // 2
+
+    # Handle palu.
+    for y in range(34, height):
+        x = int(cx + (y - 34) * 0.10)
+        sprite[y, x - 5:x + 6, :3] = (45, 85, 150)
+        sprite[y, x - 5:x + 6, 3] = 245
+        sprite[y, x - 1:x + 2, :3] = (90, 145, 210)
+
+    # Kepala palu.
+    head_x1, head_y1 = cx - 38, 14
+    head_x2, head_y2 = cx + 38, 44
+    sprite[head_y1:head_y2, head_x1:head_x2, :3] = (150, 160, 170)
+    sprite[head_y1:head_y2, head_x1:head_x2, 3] = 250
+    sprite[head_y1 + 4:head_y1 + 10, head_x1 + 5:head_x2 - 5, :3] = (230, 235, 240)
+
+    # Aura biru di sekitar marker agar hubungan marker-senjata terlihat.
+    ys, xs = np.mgrid[0:height, 0:width]
+    dist = np.sqrt((xs - cx) ** 2 + (ys - 78) ** 2)
+    aura = dist <= 23
+    sprite[:, :, 0] = np.where(aura, 255, sprite[:, :, 0])
+    sprite[:, :, 1] = np.where(aura, 185, sprite[:, :, 1])
+    sprite[:, :, 2] = np.where(aura, 50, sprite[:, :, 2])
+    sprite[:, :, 3] = np.where(aura, np.maximum(sprite[:, :, 3], 95), sprite[:, :, 3])
+
+    return sprite
+
+def overlay_sprite(frame, sprite_bgra, cx, cy, scale=1.0):
+    """
+    Menempel sprite BGRA ke frame BGR dengan alpha blending manual NumPy.
+    Rumus: output = foreground * alpha + background * (1 - alpha)
+    """
+    sprite = sprite_bgra
+    if abs(scale - 1.0) > 0.01:
+        sh, sw = sprite.shape[:2]
+        new_w = max(1, int(sw * scale))
+        new_h = max(1, int(sh * scale))
+        sprite = cv2.resize(sprite, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
+
+    sh, sw = sprite.shape[:2]
+    x1 = cx - sw // 2
+    y1 = cy - sh // 2
+    x2 = x1 + sw
+    y2 = y1 + sh
+
+    sx1 = max(0, -x1)
+    sy1 = max(0, -y1)
+    sx2 = sw - max(0, x2 - frame.shape[1])
+    sy2 = sh - max(0, y2 - frame.shape[0])
+    fx1 = max(0, x1)
+    fy1 = max(0, y1)
+    fx2 = fx1 + (sx2 - sx1)
+    fy2 = fy1 + (sy2 - sy1)
+
+    if fx2 <= fx1 or fy2 <= fy1:
+        return
+
+    roi = frame[fy1:fy2, fx1:fx2].astype(np.float32)
+    sprite_crop = sprite[sy1:sy2, sx1:sx2]
+    foreground = sprite_crop[:, :, :3].astype(np.float32)
+    alpha = sprite_crop[:, :, 3:4].astype(np.float32) / 255.0
+
+    blended = foreground * alpha + roi * (1.0 - alpha)
+    frame[fy1:fy2, fx1:fx2] = blended.astype(np.uint8)
+
 def dummy_callback(value):
     # Pass untuk trackbar
     pass
@@ -105,6 +176,7 @@ def main():
         gesture_threshold=35,
         cooldown_frames=20
     )
+    hammer_sprite = create_hammer_sprite()
 
     print("Mulai kamera. Arahkan marker biru ke kamera. Tekan 'q' untuk keluar.")
     
@@ -165,6 +237,9 @@ def main():
         # Gambarkan tracker titik tengah ke frame RGB asli
         if centroid:
             cx, cy = centroid
+            weapon_scale = 1.15 if gesture_detector.is_active() else 1.0
+            overlay_sprite(frame, hammer_sprite, cx, cy, scale=weapon_scale)
+
             # Menambahkan lingkaran pointer + teks titik koordinat
             cv2.circle(frame, (cx, cy), 15, (0, 255, 0), -1)
             cv2.circle(frame, (cx, cy), 15, (255, 255, 255), 2)
