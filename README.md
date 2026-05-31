@@ -12,6 +12,7 @@ Project ini masih berada pada tahap awal, yaitu membangun pipeline computer visi
 - HSV masking menggunakan operasi array NumPy.
 - Operasi morfologi manual untuk membersihkan mask.
 - Deteksi centroid sebagai posisi awal kontrol handweapon.
+- Gesture detection sederhana berdasarkan kecepatan perpindahan centroid.
 
 ## Project Requirements
 
@@ -32,6 +33,7 @@ Mini game final harus memiliki:
 ```text
 handweapon-minigame-pcv/
 |-- main.py           # Prototype kamera, HSV mask, morfologi, dan tracking
+|-- gesture.py        # Deteksi gesture cepat dari velocity centroid
 |-- tracker_utils.py  # Helper morfologi manual dan centroid
 |-- README.md         # Dokumentasi project
 `-- .gitignore
@@ -55,7 +57,6 @@ Tekan `q` untuk keluar dari program.
 
 ## Next Development Plan
 
-- Menambahkan gesture detection dari pergerakan centroid.
 - Menambahkan weapon virtual.
 - Menambahkan second object sebagai target game.
 - Menambahkan score, lives, dan game state.

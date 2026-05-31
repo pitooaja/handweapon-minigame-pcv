@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 
+from gesture import GestureDetector
+
 def manual_erosion(binary_img, kernel_size=5):
     """
     Operasi Erosi murni NumPy (tanpa cv2.erode).
@@ -92,6 +94,12 @@ def main():
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
     
+    gesture_detector = GestureDetector(
+        history_len=6,
+        gesture_threshold=35,
+        cooldown_frames=20
+    )
+
     print("Mulai kamera. Tekan 'q' untuk keluar.")
     
     while cap.isOpened():
@@ -146,6 +154,7 @@ def main():
         
         # 4. Cari Titik Tengah (Centroid) Menggunakan Numpy Array Indexing
         centroid = get_centroid(mask_cleaned)
+        gesture_detector.update(centroid)
         
         # Gambarkan tracker titik tengah ke frame RGB asli
         if centroid:
@@ -155,6 +164,14 @@ def main():
             cv2.circle(frame, (cx, cy), 15, (255, 255, 255), 2)
             cv2.putText(frame, f"Tracking: ({cx},{cy})", (cx + 25, cy - 15), 
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+
+        velocity = gesture_detector.get_velocity()
+        if gesture_detector.is_active():
+            cv2.putText(frame, "GESTURE: FAST MOVE", (20, 40),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+        else:
+            cv2.putText(frame, f"Velocity: {velocity:.1f} px/frame", (20, 40),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 255), 2)
         
         # 5. Result Display
         # Menampilkan gambar masing-masing ke dalam jendela layar
