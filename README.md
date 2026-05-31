@@ -18,6 +18,7 @@ Project ini masih berada pada tahap awal, yaitu membangun pipeline computer visi
 - Alpha blending manual menggunakan operasi NumPy untuk menempel sprite transparan.
 - Second object berupa hot ingot di atas anvil sebagai target pukulan.
 - Scoring system sederhana: skor dan jumlah hit bertambah saat `STRIKE` mengenai ingot.
+- Game state sederhana: start screen, playing state, game over, lives, dan timer ingot.
 
 ## Project Requirements
 
@@ -58,7 +59,7 @@ pip install opencv-python numpy
 python main.py
 ```
 
-Tekan `q` untuk keluar dari program.
+Tekan `SPACE` untuk mulai, `R` untuk restart setelah game over, dan `q` untuk keluar dari program.
 
 Default HSV untuk marker biru:
 
@@ -74,6 +75,5 @@ Gerakkan marker dengan cepat ke bawah untuk memicu gesture `STRIKE`.
 
 ## Next Development Plan
 
-- Menambahkan lives dan game state.
 - Mengembangkan konsep game final: Forge Strike.
 

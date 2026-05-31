@@ -11,6 +11,8 @@ INGOT_W = 150
 INGOT_H = 42
 HIT_FLASH_FRAMES = 10
 SCORE_PER_HIT = 10
+LIVES_START = 3
+INGOT_TIME_LIMIT = 180
 
 def manual_erosion(binary_img, kernel_size=5):
     """
@@ -196,8 +198,8 @@ def is_strike_on_ingot(centroid, ingot_box, gesture_detector):
     return (x1 - margin <= cx <= x2 + margin and
             y1 - margin <= cy <= y2 + margin)
 
-def draw_hud(frame, score, hit_count):
-    """Menampilkan skor sederhana untuk tahap scoring system."""
+def draw_hud(frame, score, hit_count, lives, ingot_timer):
+    """Menampilkan score, hit count, lives, dan timer ingot."""
     overlay = frame.copy()
     cv2.rectangle(overlay, (0, 0), (FRAME_W, 64), (20, 20, 20), -1)
     frame[:] = (overlay.astype(np.float32) * 0.55 +
@@ -207,6 +209,47 @@ def draw_hud(frame, score, hit_count):
                 cv2.FONT_HERSHEY_DUPLEX, 0.8, (0, 230, 255), 2)
     cv2.putText(frame, f"HITS: {hit_count}", (210, 42),
                 cv2.FONT_HERSHEY_DUPLEX, 0.8, (120, 220, 255), 2)
+    cv2.putText(frame, f"LIVES: {lives}", (360, 42),
+                cv2.FONT_HERSHEY_DUPLEX, 0.8, (80, 180, 255), 2)
+
+    timer_ratio = max(0.0, ingot_timer / INGOT_TIME_LIMIT)
+    bar_x1, bar_y1 = 500, 22
+    bar_w, bar_h = 110, 14
+    cv2.rectangle(frame, (bar_x1, bar_y1), (bar_x1 + bar_w, bar_y1 + bar_h),
+                  (60, 60, 60), -1)
+    cv2.rectangle(frame, (bar_x1, bar_y1),
+                  (bar_x1 + int(bar_w * timer_ratio), bar_y1 + bar_h),
+                  (0, int(100 + 155 * timer_ratio), 255), -1)
+    cv2.rectangle(frame, (bar_x1, bar_y1), (bar_x1 + bar_w, bar_y1 + bar_h),
+                  (220, 220, 220), 1)
+
+def draw_start_screen(frame):
+    """Overlay start screen untuk game state awal."""
+    overlay = frame.copy()
+    cv2.rectangle(overlay, (0, 0), (FRAME_W, FRAME_H), (15, 10, 5), -1)
+    frame[:] = (overlay.astype(np.float32) * 0.68 +
+                frame.astype(np.float32) * 0.32).astype(np.uint8)
+    cv2.putText(frame, "FORGE STRIKE", (FRAME_W // 2 - 180, 170),
+                cv2.FONT_HERSHEY_DUPLEX, 1.55, (0, 220, 255), 3)
+    cv2.putText(frame, "Blue marker = hammer", (FRAME_W // 2 - 150, 230),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.75, (230, 230, 230), 2)
+    cv2.putText(frame, "Downward STRIKE hits the ingot", (FRAME_W // 2 - 210, 270),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.75, (230, 230, 230), 2)
+    cv2.putText(frame, "Press SPACE to start", (FRAME_W // 2 - 145, 345),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.85, (0, 255, 255), 2)
+
+def draw_gameover_screen(frame, score):
+    """Overlay game over dengan instruksi restart."""
+    overlay = frame.copy()
+    cv2.rectangle(overlay, (0, 0), (FRAME_W, FRAME_H), (5, 5, 12), -1)
+    frame[:] = (overlay.astype(np.float32) * 0.72 +
+                frame.astype(np.float32) * 0.28).astype(np.uint8)
+    cv2.putText(frame, "GAME OVER", (FRAME_W // 2 - 165, 190),
+                cv2.FONT_HERSHEY_DUPLEX, 1.7, (0, 0, 255), 3)
+    cv2.putText(frame, f"Final Score: {score}", (FRAME_W // 2 - 145, 260),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 230, 255), 2)
+    cv2.putText(frame, "Press R to restart", (FRAME_W // 2 - 145, 335),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.82, (230, 230, 230), 2)
 
 def dummy_callback(value):
     # Pass untuk trackbar
@@ -249,6 +292,9 @@ def main():
     hit_flash = 0
     score = 0
     hit_count = 0
+    lives = LIVES_START
+    ingot_timer = INGOT_TIME_LIMIT
+    state = "start"
 
     print("Mulai kamera. Arahkan marker biru ke kamera. Tekan 'q' untuk keluar.")
     
@@ -306,12 +352,65 @@ def main():
         centroid = get_centroid(mask_cleaned)
         gesture_detector.update(centroid)
 
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord('q'):
+            break
+
+        if state == "start":
+            draw_anvil(frame)
+            draw_ingot(frame, 0)
+            if centroid:
+                cx, cy = centroid
+                overlay_sprite(frame, hammer_sprite, cx, cy, scale=1.0)
+            draw_start_screen(frame)
+
+            if key == ord(' '):
+                score = 0
+                hit_count = 0
+                lives = LIVES_START
+                ingot_timer = INGOT_TIME_LIMIT
+                hit_flash = 0
+                state = "playing"
+
+            cv2.imshow("1. Input Frame & Blue Marker Tracking", frame)
+            cv2.imshow("2. Blue Mask Numpy Mentah", mask_mentah)
+            cv2.imshow("3. Blue Mask Setelah Morfologi", mask_cleaned)
+            continue
+
+        if state == "gameover":
+            draw_anvil(frame)
+            draw_ingot(frame, 0)
+            draw_hud(frame, score, hit_count, lives, ingot_timer)
+            draw_gameover_screen(frame, score)
+
+            if key == ord('r'):
+                score = 0
+                hit_count = 0
+                lives = LIVES_START
+                ingot_timer = INGOT_TIME_LIMIT
+                hit_flash = 0
+                state = "playing"
+
+            cv2.imshow("1. Input Frame & Blue Marker Tracking", frame)
+            cv2.imshow("2. Blue Mask Numpy Mentah", mask_mentah)
+            cv2.imshow("3. Blue Mask Setelah Morfologi", mask_cleaned)
+            continue
+
+        ingot_timer -= 1
+        if ingot_timer <= 0:
+            lives -= 1
+            ingot_timer = INGOT_TIME_LIMIT
+            hit_flash = HIT_FLASH_FRAMES
+            if lives <= 0:
+                state = "gameover"
+
         draw_anvil(frame)
         ingot_box = draw_ingot(frame, hit_flash)
         if is_strike_on_ingot(centroid, ingot_box, gesture_detector):
             hit_flash = HIT_FLASH_FRAMES
             score += SCORE_PER_HIT
             hit_count += 1
+            ingot_timer = INGOT_TIME_LIMIT
         elif hit_flash > 0:
             hit_flash -= 1
         
@@ -336,7 +435,7 @@ def main():
             cv2.putText(frame, f"Velocity: {velocity:.1f} | Down: {down_velocity:.1f}", (20, 92),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 255), 2)
 
-        draw_hud(frame, score, hit_count)
+        draw_hud(frame, score, hit_count, lives, ingot_timer)
         
         # 5. Result Display
         # Menampilkan gambar masing-masing ke dalam jendela layar
@@ -344,9 +443,6 @@ def main():
         cv2.imshow("2. Blue Mask Numpy Mentah", mask_mentah)
         cv2.imshow("3. Blue Mask Setelah Morfologi", mask_cleaned)
         
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-
     cap.release()
     cv2.destroyAllWindows()
 
