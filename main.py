@@ -11,6 +11,8 @@ INGOT_W = 150
 INGOT_H = 42
 HIT_FLASH_FRAMES = 10
 SCORE_PER_HIT = 10
+SCORE_FORGED_BONUS = 35
+HITS_TO_FORGE = 3
 LIVES_START = 3
 INGOT_TIME_LIMIT = 180
 
@@ -165,21 +167,32 @@ def draw_anvil(frame):
     cv2.putText(frame, "ANVIL", (ANVIL_X - 29, ANVIL_Y + 64),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.48, (190, 190, 195), 1)
 
-def draw_ingot(frame, hit_flash=0):
+def draw_ingot(frame, hit_flash=0, forge_hits=0):
     """Menggambar hot ingot sebagai second object yang akan dipukul."""
     x1 = ANVIL_X - INGOT_W // 2
     y1 = ANVIL_Y - 54
     x2 = ANVIL_X + INGOT_W // 2
     y2 = y1 + INGOT_H
 
+    forge_ratio = min(1.0, forge_hits / HITS_TO_FORGE)
     glow_color = (0, 180, 255) if hit_flash == 0 else (0, 255, 255)
-    body_color = (0, 110, 230) if hit_flash == 0 else (40, 220, 255)
+    body_color = (
+        int(20 * forge_ratio),
+        int(110 + 90 * forge_ratio),
+        int(230 + 25 * forge_ratio)
+    ) if hit_flash == 0 else (40, 220, 255)
 
     cv2.rectangle(frame, (x1 - 8, y1 - 8), (x2 + 8, y2 + 8), glow_color, 2)
     cv2.rectangle(frame, (x1, y1), (x2, y2), body_color, -1)
     cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 230, 150), 2)
     cv2.putText(frame, "INGOT", (x1 + 44, y1 + 27),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.52, (255, 255, 255), 1)
+
+    for i in range(HITS_TO_FORGE):
+        px = x1 + 44 + i * 30
+        mark_color = (255, 255, 255) if i < forge_hits else (70, 70, 70)
+        cv2.circle(frame, (px, y2 + 18), 7, mark_color, -1)
+        cv2.circle(frame, (px, y2 + 18), 7, (20, 20, 20), 1)
 
     if hit_flash > 0:
         cv2.putText(frame, "HIT!", (ANVIL_X - 34, y1 - 18),
@@ -251,6 +264,13 @@ def draw_gameover_screen(frame, score):
     cv2.putText(frame, "Press R to restart", (FRAME_W // 2 - 145, 335),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.82, (230, 230, 230), 2)
 
+def draw_forged_feedback(frame, forged_flash):
+    if forged_flash <= 0:
+        return
+
+    cv2.putText(frame, "FORGED!", (FRAME_W // 2 - 82, 140),
+                cv2.FONT_HERSHEY_DUPLEX, 1.15, (0, 255, 255), 3)
+
 def dummy_callback(value):
     # Pass untuk trackbar
     pass
@@ -292,6 +312,8 @@ def main():
     hit_flash = 0
     score = 0
     hit_count = 0
+    forge_hits = 0
+    forged_flash = 0
     lives = LIVES_START
     ingot_timer = INGOT_TIME_LIMIT
     state = "start"
@@ -358,7 +380,7 @@ def main():
 
         if state == "start":
             draw_anvil(frame)
-            draw_ingot(frame, 0)
+            draw_ingot(frame, 0, 0)
             if centroid:
                 cx, cy = centroid
                 overlay_sprite(frame, hammer_sprite, cx, cy, scale=1.0)
@@ -367,6 +389,8 @@ def main():
             if key == ord(' '):
                 score = 0
                 hit_count = 0
+                forge_hits = 0
+                forged_flash = 0
                 lives = LIVES_START
                 ingot_timer = INGOT_TIME_LIMIT
                 hit_flash = 0
@@ -379,13 +403,15 @@ def main():
 
         if state == "gameover":
             draw_anvil(frame)
-            draw_ingot(frame, 0)
+            draw_ingot(frame, 0, forge_hits)
             draw_hud(frame, score, hit_count, lives, ingot_timer)
             draw_gameover_screen(frame, score)
 
             if key == ord('r'):
                 score = 0
                 hit_count = 0
+                forge_hits = 0
+                forged_flash = 0
                 lives = LIVES_START
                 ingot_timer = INGOT_TIME_LIMIT
                 hit_flash = 0
@@ -401,18 +427,26 @@ def main():
             lives -= 1
             ingot_timer = INGOT_TIME_LIMIT
             hit_flash = HIT_FLASH_FRAMES
+            forge_hits = 0
             if lives <= 0:
                 state = "gameover"
 
         draw_anvil(frame)
-        ingot_box = draw_ingot(frame, hit_flash)
+        ingot_box = draw_ingot(frame, hit_flash, forge_hits)
         if is_strike_on_ingot(centroid, ingot_box, gesture_detector):
             hit_flash = HIT_FLASH_FRAMES
             score += SCORE_PER_HIT
             hit_count += 1
+            forge_hits += 1
             ingot_timer = INGOT_TIME_LIMIT
+            if forge_hits >= HITS_TO_FORGE:
+                score += SCORE_FORGED_BONUS
+                forge_hits = 0
+                forged_flash = HIT_FLASH_FRAMES + 8
         elif hit_flash > 0:
             hit_flash -= 1
+        if forged_flash > 0:
+            forged_flash -= 1
         
         # Gambarkan tracker titik tengah ke frame RGB asli
         if centroid:
@@ -436,6 +470,7 @@ def main():
                         cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 255), 2)
 
         draw_hud(frame, score, hit_count, lives, ingot_timer)
+        draw_forged_feedback(frame, forged_flash)
         
         # 5. Result Display
         # Menampilkan gambar masing-masing ke dalam jendela layar
