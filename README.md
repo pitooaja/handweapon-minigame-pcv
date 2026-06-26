@@ -102,3 +102,25 @@ Nilai HSV masih bisa diatur melalui trackbar ketika program berjalan.
 - Screenshot mask HSV
 - Screenshot game over
 - [x] [Link video demonstration](https://youtu.be/dNYb8N9NNHI)
+
+
+## Screenshots
+
+### Gameplay dan Blue Marker Tracking
+
+<img width="803" height="636" alt="clipboard" src="https://github.com/user-attachments/assets/396721a6-760a-41d2-9296-29326b50ca00" />
+
+
+### Velocity Tracking untuk Gesture STRIKE
+
+<img width="796" height="632" alt="clipboard" src="https://github.com/user-attachments/assets/d16f4f15-3979-4994-98d5-03d4ea23b697" />
+
+
+### Blue Mask Setelah Morfologi
+
+<img width="790" height="606" alt="clipboard" src="https://github.com/user-attachments/assets/e3b78ff4-c2c9-47e1-8582-ff7917ae1598" />
+
+
+### Game Over
+
+<img width="787" height="642" alt="clipboard" src="https://github.com/user-attachments/assets/042add4b-f8fb-48b0-86d5-9246f2265769" />
