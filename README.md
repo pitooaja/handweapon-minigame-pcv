@@ -91,15 +91,14 @@ Nilai HSV masih bisa diatur melalui trackbar ketika program berjalan.
 - Manual Morphology: erosion, dilation, opening, dan closing.
 - Weapon Sprite Overlay: hammer sprite BGRA ditempel ke frame kamera.
 
+## Video Demo
+
+[Tonton video demonstrasi Forge Strike - Handweapon Mini Game PCV](https://youtu.be/dNYb8N9NNHI)
+
 ## Demo Checklist
 
 - Screenshot start screen
 - Screenshot gameplay
 - Screenshot mask HSV
 - Screenshot game over
-- Link video demonstration
-
-
-## Video Demo
-
-[Tonton video demonstrasi Forge Strike - Handweapon Mini Game PCV](https://youtu.be/dNYb8N9NNHI)
+- [x] [Link video demonstration](https://youtu.be/dNYb8N9NNHI)
